@@ -1,20 +1,22 @@
 use crate::models::taskitem::TaskItem;
+use crate::ui::main::Main;
+use crate::ui::sidebar::Sidebar;
+use crate::ui::topbar::Topbar;
 use eframe::egui::Vec2;
-use eframe::{
-    egui::panel::{Side, TopBottomSide},
-    *,
-};
+use eframe::*;
 use serde::Deserialize;
 use serde_json;
 use std::env;
 use std::fs;
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize,Default)]
 pub struct MyApp {
     project_name: String,
     tasks: Vec<TaskItem>,
     cwd: String,
+    #[serde(skip)] main: Main,
+    #[serde(skip)] topbar: Topbar,
+    #[serde(skip)] sidebar: Sidebar,
 }
 
 impl MyApp {
@@ -48,15 +50,20 @@ impl MyApp {
                 egui::FontId::new(20.0, egui::FontFamily::Proportional),
             );
         });
-        cc.egui_ctx.set_pixels_per_point(1.4);
+        cc.egui_ctx.set_pixels_per_point(1.1);
+
         let current_directory = env::current_dir().unwrap().to_string_lossy().to_string();
         let file_path = format!("{}/.agent/data.json", current_directory);
+
         let mut data_json: MyApp =
             serde_json::from_str(fs::read_to_string(file_path).unwrap().as_str()).expect("REASON");
         data_json.load_tasks(current_directory);
-
-        println!("{data_json:#?}");
-        Self { ..data_json }
+        Self {
+            main: Main,
+            topbar: Topbar,
+            sidebar: Sidebar,
+            ..data_json
+        }
     }
     fn load_tasks(&mut self, cwd: String) {
         let dir_data = fs::read_dir(format!("{cwd}/.agent/")).unwrap();
@@ -76,42 +83,16 @@ impl MyApp {
             let task_item: TaskItem =
                 serde_json::from_str(&fs::read_to_string(&file_name).unwrap()).unwrap();
             self.tasks.push(task_item);
-            println!("Loaded task: {:#?}", self.tasks.last().unwrap());
         }
     }
 }
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        catppuccin_egui::set_theme(&ctx, catppuccin_egui::LATTE);
-        egui::SidePanel::new(Side::Left, "left_bar")
-            .resizable(true)
-            .show(ctx, |ui| {
-                ui.add_space(13.0);
-                ui.vertical_centered(|ui| ui.label("PlanKite"));
-                ui.add_space(13.0);
-                ui.separator();
-                ui.vertical_centered(|ui| {
-                    let _ = ui.button("Regular Button");
-                    ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                        let _ = ui.button("Bottom");
-                        ui.separator();
-                    });
-                });
-            });
-        egui::TopBottomPanel::new(TopBottomSide::Top, "top_bar").show(ctx, |ui| {
-            ui.add_space(7.0);
-            ui.horizontal(|ui| {
-                let _ = ui.button("Tasks");
-                let _ = ui.button("Plan Mode");
-                let _ = ui.button("Chat Mode");
-            });
-            ui.add_space(7.0);
-        });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.label(format!("{self:#?}"));
-            });
-        });
+        catppuccin_egui::set_theme(&ctx, catppuccin_egui::MOCHA);
+        let (tasks,cwd) = (&self.tasks,&self.cwd);
+        self.sidebar.render(&ctx);
+        self.topbar.render(&ctx);
+        self.main.render(&ctx,tasks);
     }
 }

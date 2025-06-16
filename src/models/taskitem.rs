@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TaskItem {
-    title: String,
-    short_desc: String,
-    description: String,
-    sub_tasks: Vec<SubTask>,
-    status: String,
+    pub title: String,
+    pub short_desc: String,
+    pub description: String,
+    pub sub_tasks: Vec<SubTask>,
+    pub status: String,
 }
 
 impl TaskItem {}

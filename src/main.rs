@@ -1,6 +1,8 @@
 use eframe::*;
 mod app;
 mod models;
+mod ui;
+mod utils;
 
 use app::MyApp;
 
@@ -12,7 +14,7 @@ fn main(){
         ..NativeOptions::default()
     };
     run_native(
-        "New TodoList",
+        "Project Little Star",
         options,
         Box::new(|cc| {
             Ok(Box::new(MyApp::new(cc)))
