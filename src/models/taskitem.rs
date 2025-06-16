@@ -6,7 +6,7 @@ pub struct TaskItem {
     title: String,
     short_desc: String,
     description: String,
-    sub_task: Vec<SubTask>,
+    sub_tasks: Vec<SubTask>,
     status: String,
 }
 
