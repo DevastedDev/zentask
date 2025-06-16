@@ -1,4 +1,3 @@
-use crate::models::{taskitem};
 use eframe::{egui::panel::{Side, TopBottomSide}, *};
 use std::env;
 use serde_json;
@@ -82,9 +81,9 @@ impl eframe::App for MyApp {
         egui::TopBottomPanel::new(TopBottomSide::Top,"top_bar").show(ctx, |ui| {
             ui.add_space(7.0);
             ui.horizontal(|ui|{
-                ui.button("Tasks");
-                ui.button("Plan Mode");
-                ui.button("Chat Mode");
+                let _ = ui.button("Tasks");
+                let _ = ui.button("Plan Mode");
+                let _ = ui.button("Chat Mode");
             });
             ui.add_space(7.0);
         });
