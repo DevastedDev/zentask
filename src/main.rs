@@ -11,7 +11,9 @@ fn main(){
         viewport: egui::ViewportBuilder::default()
             .with_maximized(true)
             .with_fullscreen(false),
+        persist_window: true,
         ..NativeOptions::default()
+
     };
     run_native(
         "Project Little Star",
