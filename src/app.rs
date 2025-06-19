@@ -1,3 +1,4 @@
+use crate::models::appcommands::AppCommands;
 use crate::models::taskitem::TaskItem;
 use crate::ui::main::Main;
 use crate::ui::sidebar::Sidebar;
@@ -61,6 +62,7 @@ impl MyApp {
     }
 
     fn load_tasks(&mut self) {
+        self.tasks.clear();
         let dir_data = fs::read_dir(format!("{}/.agent/", self.cwd)).unwrap();
         let task_files: Vec<_> = dir_data
             .filter_map(|d| d.ok())
@@ -131,11 +133,11 @@ impl MyApp {
 
                     let folder = dir.join(".agent");
                     if folder.exists() {
-                        ui.colored_label(Color32::GREEN,"Found existing project (.agent), Please click continue to create a project");
+                        ui.colored_label(Color32::GREEN,"Found existing project (.agent), Please click continue to open the project");
                         if ui.button("Continue").clicked() {
                             self.cwd = dir.to_string_lossy().to_string();
                             self.load_project();
-                            self.selected_directory=None;
+                            self.selected_directory = None;
                             self.open_dir_window = false;
                         }
                     }else {
@@ -143,29 +145,45 @@ impl MyApp {
                         if ui.button("Continue").clicked() {
                             self.cwd = dir.to_string_lossy().to_string();
                             self.create_project();
-                            self.selected_directory=None;
-                            self.open_dir_window= false;
+                            self.selected_directory = None;
+                            self.open_dir_window = false;
                         }
                     }
                 }
             });
+    }
+
+    pub fn handle_action(&mut self, command: AppCommands) {
+        match command {
+            AppCommands::OpenNewProject => {
+                self.open_dir_window = true;
+            }
+        }
     }
 }
 
 impl App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::MOCHA);
+
+        // Handle sidebar commands first (only when not in dialog mode)
+        if !self.open_dir_window {
+            if let Some(command) = self.sidebar.render(&ctx) {
+                self.handle_action(command);
+            }
+        }
+
+        // Now render based on current state
         if self.open_dir_window {
             self.choose_dialog(&ctx);
         } else {
             let (tasks, project_name) = (&self.tasks, &self.project_name);
-            self.sidebar.render(&ctx);
-            self.topbar.render(&ctx,project_name);
+            self.topbar.render(&ctx, project_name);
             self.main.render(&ctx, tasks);
         }
     }
 
     fn save(&mut self, storage: &mut dyn Storage) {
-        set_value(storage, "app_info", self)
+        set_value(storage, eframe::APP_KEY, self)
     }
 }

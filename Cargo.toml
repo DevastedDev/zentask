@@ -5,9 +5,8 @@ edition = "2021"
 
 [dependencies]
 eframe = { version = "0.31.1", features = ["persistence"] }
-egui_extras = "0.31.1"
-image = "0.25.6"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 catppuccin-egui = { version = "5.5.0", default-features = false, features = ["egui31"] }
 rfd = "0.15.3"
+anyhow = "1.0.98"
