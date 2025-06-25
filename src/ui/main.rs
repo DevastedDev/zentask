@@ -1,4 +1,4 @@
-use crate::models::taskitem::TaskItem;
+use crate::models::{task_state::TaskState};
 use eframe::egui;
 use eframe::epaint::Shadow;
 use serde::{Deserialize, Serialize};
@@ -6,11 +6,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Main;
 impl Main {
-    pub fn render(&mut self, ctx: &egui::Context, tasks: &[TaskItem]) {
+    pub fn render(&mut self, ctx: &egui::Context, tasks: &TaskState) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for task in tasks {
-                    // Create a frame with border and shadow
+                for task in &tasks.items {
                     let frame = egui::Frame::default()
                         .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 0)))
                         .shadow(Shadow {
@@ -33,7 +32,6 @@ impl Main {
                                     ui.label(format!("Status: {}", &task.status));
                                 });
 
-                            // Push buttons to the right side
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 if ui.button("Edit").clicked() {
                                 }

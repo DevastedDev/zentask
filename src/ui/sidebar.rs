@@ -17,6 +17,9 @@ impl Sidebar {
                 ui.add_space(7.0);
                 ui.separator();
                 ui.vertical_centered(|ui| {
+                    if ui.button("Add Task").clicked(){
+                     to_send = Some(AppCommands::AddTask)
+                    }
                     ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                         if ui.button("Open New Project").clicked(){
                             to_send = Some(AppCommands::OpenNewProject)

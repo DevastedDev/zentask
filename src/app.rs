@@ -1,11 +1,13 @@
 use crate::models::appcommands::AppCommands;
+use crate::models::task_state::TaskState;
 use crate::models::taskitem::TaskItem;
 use crate::ui::main::Main;
 use crate::ui::sidebar::Sidebar;
 use crate::ui::style::{get_font, set_styles};
 use crate::ui::topbar::Topbar;
-use eframe::egui::Color32;
+use eframe::egui::{Align2, Color32};
 use eframe::*;
+use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::fs;
@@ -15,7 +17,7 @@ use std::path::{Path, PathBuf};
 pub struct MyApp {
     project_name: String,
     #[serde(skip)]
-    tasks: Vec<TaskItem>,
+    task_state:TaskState,
     cwd: String,
     #[serde(skip)]
     main: Main,
@@ -26,14 +28,16 @@ pub struct MyApp {
     #[serde(skip)]
     open_dir_window: bool,
     #[serde(skip)]
+    add_task_window: bool,
+    #[serde(skip)]
     selected_directory: Option<PathBuf>,
+    #[serde(skip)]
+    add_task_cnf : TaskItem
 }
 
 impl MyApp {
     pub fn new(cc: &CreationContext<'_>) -> Self {
-        // Set Global Styles
         set_styles(cc);
-        // Sets The Font Globally
         cc.egui_ctx.set_fonts(get_font());
 
         let mut app = if let Some(storage) = cc.storage {
@@ -62,7 +66,7 @@ impl MyApp {
     }
 
     fn load_tasks(&mut self) {
-        self.tasks.clear();
+        self.task_state.items.clear();
         let dir_data = fs::read_dir(format!("{}/.agent/", self.cwd)).unwrap();
         let task_files: Vec<_> = dir_data
             .filter_map(|d| d.ok())
@@ -83,7 +87,7 @@ impl MyApp {
             );
             if let Ok(val) = fs::read_to_string(file_name) {
                 if let Ok(task) = serde_json::from_str::<TaskItem>(val.as_str()) {
-                    self.tasks.push(task);
+                    self.task_state.load_task_struct(task);
                 }
             }
         }
@@ -153,33 +157,137 @@ impl MyApp {
             });
     }
 
+    pub fn render_add_task_window(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Add Task")
+            .resizable(true)
+            .drag_to_scroll(true)
+            .collapsible(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.heading("📝 Add new task");
+                    ui.with_layout(
+                        egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            if ui.add(egui::Button::new("❌ Close").fill(ui.visuals().warn_fg_color)).clicked() {
+                                self.add_task_window = false;
+                            }
+                        }
+                    );
+                });
+
+                ui.add_space(16.0);
+
+                ui.group(|ui| {
+                    ui.label("Title");
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.add_task_cnf.title)
+                            .hint_text("Enter a title")
+                            .desired_width(f32::INFINITY)
+                    );
+                    ui.add_space(8.0);
+
+                    ui.label("Short Description");
+                    ui.add(
+                        egui::TextEdit::singleline(&mut self.add_task_cnf.short_desc)
+                            .hint_text("Short summary (optional)")
+                            .desired_width(f32::INFINITY)
+                    );
+                    ui.add_space(8.0);
+
+                    ui.label("Description");
+                    ui.add(
+                        egui::TextEdit::multiline(&mut self.add_task_cnf.description)
+                            .hint_text("Full description...")
+                            .desired_rows(4)
+                            .desired_width(f32::INFINITY)
+                    );
+                });
+
+                ui.add_space(16.0);
+
+                ui.horizontal(|ui| {
+                    ui.with_layout(
+                        egui::Layout::right_to_left(egui::Align::Min), |ui| {
+                            if ui.add(
+                                egui::Button::new("➕ Add Task")
+                                    .fill(ui.visuals().selection.bg_fill)
+                                    .min_size(egui::Vec2::new(100.0, 30.0))
+                            ).clicked() {
+                                match self.task_state.add_new_task(&self.cwd,&mut self.add_task_cnf) {
+                                    Some(command) => { self.handle_action(command);},
+                                    None => { self.handle_action(AppCommands::AddTaskFailed);}
+                                }
+                            }
+                            if ui.add(
+                                egui::Button::new("Cancel")
+                                    .min_size(egui::Vec2::new(80.0, 30.0))
+                            ).clicked() {
+                                self.add_task_window = false;
+                            }
+                        }
+                    );
+                });
+            });
+
+    }
     pub fn handle_action(&mut self, command: AppCommands) {
         match command {
             AppCommands::OpenNewProject => {
                 self.open_dir_window = true;
+            },
+            AppCommands::AddTask => {
+                self.add_task_window = true;
+            },
+            AppCommands::AddTaskSucess => {
+                let mut toasts = Toasts::new()
+                    .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
+                    .direction(egui::Direction::BottomUp);
+
+                toasts.add(Toast {
+                    text: "Task Added!".into(),
+                    kind: ToastKind::Info,
+                    options: ToastOptions::default()
+                        .duration_in_seconds(5.0)
+                        .show_progress(true),
+                    ..Default::default()
+                });
+
+            },
+            AppCommands::AddTaskFailed => {
+                let mut toasts = Toasts::new()
+                    .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
+                    .direction(egui::Direction::BottomUp);
+                toasts.add(Toast {
+                    text: "Task Failed to add!".into(),
+                    kind: ToastKind::Error,
+                    options: ToastOptions::default()
+                        .duration_in_seconds(5.0)
+                        .show_progress(true),
+                    ..Default::default()
+                });
             }
+            _ => {},
         }
     }
 }
 
 impl App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
-        catppuccin_egui::set_theme(&ctx, catppuccin_egui::MOCHA);
-
-        // Handle sidebar commands first (only when not in dialog mode)
-        if !self.open_dir_window {
-            if let Some(command) = self.sidebar.render(&ctx) {
-                self.handle_action(command);
-            }
-        }
-
-        // Now render based on current state
+        catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
         if self.open_dir_window {
             self.choose_dialog(&ctx);
         } else {
-            let (tasks, project_name) = (&self.tasks, &self.project_name);
+            if let Some(command) = self.sidebar.render(&ctx) {
+                self.handle_action(command);
+            }
+            let (task_state, project_name) = (&self.task_state, &self.project_name);
             self.topbar.render(&ctx, project_name);
-            self.main.render(&ctx, tasks);
+            self.main.render(&ctx, task_state);
+
+
+            if self.add_task_window{
+                self.render_add_task_window(&ctx)
+            }
         }
     }
 

@@ -5,7 +5,7 @@ pub fn get_font() -> FontDefinitions {
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
         "space_mono".to_owned(),
-        egui::FontData::from_static(include_bytes!("../../assets/space_mono.ttf")).into(),
+        egui::FontData::from_static(include_bytes!("../../assets/Roketto.ttf")).into(),
     );
     fonts
         .families
