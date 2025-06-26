@@ -1,6 +1,5 @@
-use crate::models::{task_state::TaskState};
+use crate::models::task_state::TaskState;
 use eframe::egui;
-use eframe::epaint::Shadow;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -10,16 +9,9 @@ impl Main {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 for task in &tasks.items {
-                    let frame = egui::Frame::default()
-                        .stroke(egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 0, 0)))
-                        .shadow(Shadow {
-                            color: egui::Color32::from_black_alpha(80),
-                            offset:[1,1],
-                            blur:4,
-                            spread:1
-                        })
-                        .inner_margin(egui::Margin::same(8))
-                        .outer_margin(egui::Margin::same(2));
+                    let frame = egui::Frame::none()
+                        .inner_margin(egui::Margin::symmetric(12, 8))
+                        .outer_margin(egui::Margin::symmetric(0, 2));
 
                     frame.show(ui, |ui| {
                         ui.set_width(ui.available_width());
@@ -33,12 +25,9 @@ impl Main {
                                 });
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if ui.button("Edit").clicked() {
-                                }
-                                if ui.button("+").clicked() {
-                                }
-                                if ui.button("Open").clicked() {
-                                }
+                                if ui.button("Edit").clicked() {}
+                                if ui.button("+").clicked() {}
+                                if ui.button("Open").clicked() {}
                             });
                         });
                     });
@@ -47,5 +36,4 @@ impl Main {
             });
         });
     }
-
 }
